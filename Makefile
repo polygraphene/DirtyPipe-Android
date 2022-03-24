@@ -2,13 +2,14 @@ CC=aarch64-linux-android31-clang
 CXX=aarch64-linux-android31-clang++
 STRIP=llvm-strip
 CFLAGS=-O2
-ADB=adbm
+ADB=adb
 MYMOD_COPY=../../p6/kernel/out/android-gs-pixel-5.10/dist/mymod.ko
 D=/data/local/tmp
 LI=/system/lib/libldacBT_enc.so
 OBJS=dirtypipe-android.o stage1.o stage2-payload-include.S
+VERSION=1.0.0
 
-build: dirtypipe-android
+build: dirtypipe-android mymod.ko
 
 dirtypipe-android: dirtypipe-android.o Makefile stage1.o stage2-payload-include.S stage2-payload
 	$(CC) $(CFLAGS) -Wall -o $@ dirtypipe-android.o stage1.o stage2-payload-include.S
@@ -65,4 +66,7 @@ install: dirtypipe-android startup-root magisk/busybox
 
 run: install
 	$(ADB) shell $(D)/dirtypipe-android
+
+release: build
+	./release.sh $(VERSION)
 

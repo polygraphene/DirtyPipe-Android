@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # Called from modprobe-payload
-# Now in permissive domain (u:r:vendor_modprobe:s0)
+# Now in root user + permissive domain (u:r:vendor_modprobe:s0)
 
 #id > /data/local/tmp/mylog1
 #cat /proc/self/status >> /data/local/tmp/mylog1
@@ -29,7 +29,7 @@ export ANDROID_I18N_ROOT=/apex/com.android.i18n
 
 #/data/local/tmp/magisk/magiskpolicy --save /data/local/tmp/policy-dump
 /data/local/tmp/magisk/magiskpolicy --magisk --live
-/data/local/tmp/busybox telnetd -l /bin/sh -p 5860 &
+/data/local/tmp/busybox telnetd -l /bin/sh -p 10847 &
 
 # Work in progress
 
