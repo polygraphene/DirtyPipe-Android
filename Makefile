@@ -31,7 +31,6 @@ stage2: stage2-c.o stage2.o stage2.lds Makefile
 # Must be smaller than 4096 bytes
 stage2.text: stage2 Makefile
 	aarch64-linux-gnu-objcopy -O binary -j .text $< $@
-	ls -l $@
 
 # Must be smaller than 4096 bytes
 modprobe-payload: modprobe-payload.c Makefile
@@ -60,9 +59,9 @@ stage2-payload-include.o: stage2-payload-include.S stage2-payload Makefile
 
 ### INSTALL ###
 
-install: dirtypipe-android startup-root
-	$(ADB) push dirtypipe-android startup-root $(D)
-	$(ADB) shell chmod 755 $(D)/dirtypipe-android $(D)/startup-root
+install: dirtypipe-android startup-root magisk/busybox
+	$(ADB) push dirtypipe-android startup-root magisk/busybox $(D)
+	$(ADB) shell chmod 755 $(D)/dirtypipe-android $(D)/startup-root $(D)/busybox
 
 run: install
 	$(ADB) shell $(D)/dirtypipe-android
