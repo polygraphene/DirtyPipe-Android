@@ -9,3 +9,5 @@ set adb=adb -d
 %adb% shell sleep 1
 %adb% shell %dir%/busybox telnet 127.0.0.1 10847
 
+pause
+
