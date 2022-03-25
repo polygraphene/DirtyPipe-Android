@@ -165,6 +165,8 @@ int load_run_index() {
 
 /*
 This function is called in /system/bin/init when run setprop command.
+
+Pixel 6 2022-02-05
 $ llvm-objdump -TC libc++.so
 000000000005a9dc  w   DF .text  0000000000000040 std::__1::basic_streambuf<char, std::__1::char_traits<char> >::basic_streambuf()
 
