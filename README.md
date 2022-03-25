@@ -42,7 +42,7 @@ $ SKIP_MRPROPER=1 SKIP_DEFCONFIG=1 LTO=thin ./build/build.sh
 See [here](TECHNICAL-DETAILS.md)
 
 # Future work
-- Stop using insecure telnet
+- ~~Stop using insecure telnet~~
 - Make apk
 - Install Magisk
 - Add device support
