@@ -10,7 +10,7 @@ Don't use on other devices or other versions. It must crash (reboot).
 2. Setup adb (android platform tools).
 3. Launch run.bat (For Windows) or run.sh (For Linux/Mac)
     - If you get `'adb' is not recognized ...` errors, check to add adb to PATH.
-4. You now get temporary root shell by telnet <Device IP Address> 10847
+4. You now get temporary root shell by telnet \<Device IP Address\> 10847
 
 ![Screenshot](/screenshot1.png)
 
@@ -18,7 +18,7 @@ Don't use on other devices or other versions. It must crash (reboot).
 1. Install Android NDK
 2. Set PATH for aarch64-linux-android31-clang
 ```
-export PATH=$PATH:$ANDROID\_NDK/toolchains/llvm/prebuilt/linux-x86\_64/bin
+export PATH=$PATH:$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
 ```
 3. Run make
 ```
@@ -30,14 +30,17 @@ $ make
 2. Put mymod directory on kernel/private/google-modules/
 3. Apply mymod/build-script-patch.patch to kernel/private/gs-google
 4. Run build script
-  
+
 ```
 # For the first build
 $ LTO=thin ./build/build.sh
 # For faster rebuild (skip full rebuild)
-$ SKIP\_MRPROPER=1 SKIP\_DEFCONFIG=1 LTO=thin ./build/build.sh
+$ SKIP_MRPROPER=1 SKIP_DEFCONFIG=1 LTO=thin ./build/build.sh
 ```
-  
+
+# Technical details
+See [here](TECHNICAL-DETAILS.md)
+
 # Future work
 - Stop using insecure telnet
 - Make apk
