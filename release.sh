@@ -12,6 +12,7 @@ cp dirtypipe-android startup-root run.sh run.bat "$dir"
 
 mkdir "$dir"/magisk
 cp magisk/busybox "$dir"/magisk/
+cp magisk/magiskpolicy "$dir"/magisk/
 
 cd dist/
 zip -r "$dname".zip "$dname"

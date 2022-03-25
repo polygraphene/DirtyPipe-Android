@@ -27,8 +27,8 @@ export PATH=/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin
 export ANDROID_ROOT=/system
 export ANDROID_I18N_ROOT=/apex/com.android.i18n
 
-#/data/local/tmp/magisk/magiskpolicy --save /data/local/tmp/policy-dump
-/data/local/tmp/magisk/magiskpolicy --magisk --live
+#/data/local/tmp/magiskpolicy --save /data/local/tmp/policy-dump
+/data/local/tmp/magiskpolicy --magisk --live
 /data/local/tmp/busybox telnetd -l /bin/sh -p 10847 &
 
 # Work in progress
