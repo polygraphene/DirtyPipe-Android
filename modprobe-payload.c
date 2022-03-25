@@ -44,6 +44,9 @@ int _start() {
 
 	// If succeed to load module, we now on a permissive domain.
 
+	int p[2];
+	pipe2(p, O_CLOEXEC);
+
 	int fdnull = open("/dev/null", O_RDWR);
 	dup2(fdnull, 0);
 	dup2(fdnull, 1);
@@ -55,6 +58,12 @@ int _start() {
 		exit(2);
 		return 0;
 	}
+	close(p[1]);
+	char buf;
+	// Wait for execve() of child. This should wait for close-on-exec on pipe.
+	// If we don't wait execve(), stage2 will overwrite (restore) the content of /vendor/bin/modprobe.
+	// This will crash the child process.
+	read(p[0], &buf, 1);
 
 	exit(ret);
 }

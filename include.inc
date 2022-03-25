@@ -126,6 +126,7 @@
   .equ SYS_ppoll,           73
   .equ SYS_splice,          76
   .equ SYS_exit,            93 
+  .equ SYS_waitid,          95
   .equ SYS_futex,           98
   .equ SYS_kill,           129
   .equ SYS_reboot,         142
