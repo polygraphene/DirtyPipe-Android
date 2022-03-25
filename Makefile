@@ -7,7 +7,7 @@ MYMOD_COPY=../../p6/kernel/out/android-gs-pixel-5.10/dist/mymod.ko
 D=/data/local/tmp
 LI=/system/lib/libldacBT_enc.so
 OBJS=dirtypipe-android.o stage1.o stage2-payload-include.S
-VERSION=1.0.0
+VERSION=1.0.1
 
 build: dirtypipe-android mymod.ko
 
