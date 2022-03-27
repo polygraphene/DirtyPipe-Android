@@ -11,10 +11,13 @@ VERSION=1.0.1
 
 build: dirtypipe-android mymod.ko
 
-dirtypipe-android: dirtypipe-android.o Makefile stage1.o stage2-payload-include.S stage2-payload
-	$(CC) $(CFLAGS) -Wall -o $@ dirtypipe-android.o stage1.o stage2-payload-include.S
+dirtypipe-android: dirtypipe-android.o elf-parser.o Makefile stage1.o stage2-payload-include.S stage2-payload
+	$(CC) $(CFLAGS) -Wall -o $@ dirtypipe-android.o elf-parser.o stage1.o stage2-payload-include.S
 
-dirtypipe-android.o: dirtypipe-android.c Makefile
+dirtypipe-android.o: dirtypipe-android.c Makefile stage2-symbol.h
+	$(CC) -Os -c -o $@ $<
+
+elf-parser.o: elf-parser.c Makefile
 	$(CC) -Os -c -o $@ $<
 
 stage1.o: stage1.S Makefile include.inc
@@ -32,6 +35,10 @@ stage2: stage2-c.o stage2.o stage2.lds Makefile
 # Must be smaller than 4096 bytes
 stage2.text: stage2 Makefile
 	aarch64-linux-gnu-objcopy -O binary -j .text $< $@
+
+stage2-symbol.h: stage2 Makefile
+	echo -n "unsigned long stage2_libname_addr = 0x" > $@
+	(nm $< | grep -e ' T libname'$ | cut -f 1 -d " " | tr -d $$'\n'; echo "UL - 0x2000UL;") >> $@ || rm $@
 
 # Must be smaller than 4096 bytes
 modprobe-payload: modprobe-payload.c Makefile

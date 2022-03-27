@@ -5,6 +5,7 @@
     .global mysyscall
     .global _start
 //    .global logerror
+    .global libname
 
     .global c_entry
 
@@ -26,4 +27,6 @@ mysyscall:
 //logerror:
 //    br x0
 
+libname:
+    .space 128, 0
 

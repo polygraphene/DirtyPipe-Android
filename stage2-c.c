@@ -392,7 +392,9 @@ void c_entry() {
 		mywrite(fdat, selinux_context, mystrlen(selinux_context));
 		myclose(fdat);
 
-		myexecve("/vendor/bin/modprobe", NULL, NULL);
+		const char *argv[] = {modprobe_path, libmod_path, NULL};
+
+		myexecve(argv[0], argv, NULL);
 	}else{
 		lo(global, "Wait for child pid=%d\n", ret);
 		u64 ret2 = mywaitid(P_PID, ret, NULL, WEXITED, NULL);

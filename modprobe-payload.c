@@ -24,7 +24,24 @@
 #define LOGV(...) { __android_log_print(ANDROID_LOG_INFO, "modprobe-payload", __VA_ARGS__); }
 
 int _start() {
-	const char *lib_mod = "/vendor/lib/libstagefright_soft_mp3dec.so";
+	//const char *lib_mod = "/vendor/lib/libstagefright_soft_mp3dec.so";
+	// Parse cmdline
+	int fd_c = open("/proc/self/cmdline", O_RDONLY);
+	char cmdline[1000];
+	int r = read(fd_c, cmdline, sizeof(cmdline) - 1);
+	if(r <= 0){
+		LOGV("Failed to get cmdline.");
+		exit(1);
+	}
+	close(fd_c);
+
+	cmdline[r] = 0;
+	int path_len = strlen(cmdline);
+	if(path_len >= r - 1){
+		LOGV("Failed to parse cmdline");
+		exit(1);
+	}
+	const char *lib_mod = cmdline + path_len + 1;
 
 	int fd = open(lib_mod, O_RDONLY);
 

