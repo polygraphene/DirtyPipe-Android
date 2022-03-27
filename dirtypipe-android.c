@@ -194,22 +194,32 @@ int main(int argc, char **argv)
 	__system_property_get("ro.build.product", product);
 	__system_property_get("ro.build.fingerprint", fingerprint);
 
-	if(strcmp(product, "oriole") == 0){
-		if(strcmp(fingerprint, "google/oriole/oriole:12/SQ1D.220205.004/8151327:user/release-keys") == 0){
-			// Pixel 6 2022-02-05
-			stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
-		}else if(strcmp(fingerprint, "google/oriole/oriole:12/SP2A.220305.013.A3/8229987:user/release-keys") == 0){
-			// Pixel 6 2022-03-05
-			stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
+	if(argc >= 2 && strcmp(argv[1], "-f") == 0){
+		printf("Ignore device info.\n");
+		if(argc >= 3){
+			stage2_param_libname = argv[2];
 		}else{
-			fprintf(stderr, "Unsupported version: Product=%s Fingerprint=%s\n", product, fingerprint);
-			return EXIT_FAILURE;
+			stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
 		}
 	}else{
-		fprintf(stderr, "Unsupported product: Product=%s Fingerprint=%s\n", product, fingerprint);
-		return EXIT_FAILURE;
+		if(strcmp(product, "oriole") == 0){
+			if(strcmp(fingerprint, "google/oriole/oriole:12/SQ1D.220205.004/8151327:user/release-keys") == 0){
+				// Pixel 6 2022-02-05
+				stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
+			}else if(strcmp(fingerprint, "google/oriole/oriole:12/SP2A.220305.013.A3/8229987:user/release-keys") == 0){
+				// Pixel 6 2022-03-05
+				stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
+			}else{
+				fprintf(stderr, "Unsupported version: Product=%s Fingerprint=%s\n", product, fingerprint);
+				return EXIT_FAILURE;
+			}
+		}else{
+			fprintf(stderr, "Unsupported product: Product=%s Fingerprint=%s\n", product, fingerprint);
+			return EXIT_FAILURE;
+		}
 	}
 	printf("Device version: Product=%s Fingerprint=%s\n", product, fingerprint);
+	printf("Stage2 libname for kmod overwrite: %s\n", stage2_param_libname);
 
 	if(find_hook_target(stage1_lib, &hook_offset, &shellcode_offset)){
 		fprintf(stderr, "Could not find hook target and shellcode offset from libc++.so\n");

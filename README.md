@@ -2,7 +2,7 @@
 Dirty Pipe (CVE-2022-0847) temporary root PoC for Android.
 
 # Targets
-Currently only run on Pixel 6 with security patch level 2022-02-05.
+Currently only run on Pixel 6 with security patch level 2022-02-05 or 2022-03-05.
 Don't use on other devices or other versions. It must crash (reboot).
 
 # How to use

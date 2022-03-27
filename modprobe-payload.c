@@ -53,7 +53,11 @@ int _start() {
 		// EACCES 13: denied by selinux policy. current domain has no load_module permission.
 		// EFAULT 14: module was loaded but something wrong on modifying selinux policy.
 		// ENOMSG 42: ok. mymod returns ENOMSG even if succeed to load.
-		LOGV("Error on finit_module: %s %d %d\n", lib_mod, ret, errno);
+		if(errno == ENOMSG){
+			LOGV("Successfully set permissive: %s %d %d\n", lib_mod, ret, errno);
+		}else{
+			LOGV("Error on finit_module: %s %d %d\n", lib_mod, ret, errno);
+		}
 	}else{
 		LOGV("Succeed on finit_module: %s %d\n", lib_mod, ret);
 	}
