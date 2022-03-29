@@ -377,7 +377,7 @@ void c_entry() {
 		global->dlsym(libc, "vsnprintf");
 #endif
 
-#ifdef STAGE2_DEBUG == 1
+#if STAGE2_DEBUG == 1
 	myopen("/dev/.s2a", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0755);
 	exit(2);
 #endif
