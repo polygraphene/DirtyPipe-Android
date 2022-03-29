@@ -72,6 +72,7 @@
   .equ O_TRUNC,   00001000
   .equ O_APPEND,  00002000
   .equ O_NONBLOCK,00004000
+  .equ O_CLOEXEC, 02000000
   
   .equ SHUT_RDWR,            2
 

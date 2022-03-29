@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <linux/elf.h>
 
-int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payload_target) {
+int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payload_target, uint32_t* first_instruction) {
 	Elf64_Ehdr hdr;
 
 	*hook_target = 0;
@@ -36,8 +36,6 @@ int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payloa
 		close(fd);
 		return 1;
 	}
-	uint64_t dynamic_offset = 0;
-	uint64_t dynamic_size = 0;
 	for(int i = 0; i < hdr.e_phnum; i++){
 		Elf64_Phdr phdr;
 		if(read(fd, (char *)&phdr, sizeof(phdr)) < 0){
@@ -50,27 +48,6 @@ int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payloa
 			if(phdr.p_flags & PF_X){
 				*payload_target = phdr.p_offset + phdr.p_filesz;
 			}
-		}else if(phdr.p_type == PT_DYNAMIC){
-			dynamic_offset = phdr.p_offset;
-			dynamic_size = phdr.p_filesz;
-		}
-	}
-	if(dynamic_size == 0){
-		fprintf(stderr, "Dynamic information not found\n");
-		close(fd);
-		return 1;
-	}
-	if(lseek64(fd, dynamic_offset, SEEK_SET) < 0){
-		perror("lseek64 dynamic_offset");
-		close(fd);
-		return 1;
-	}
-	for(int i = 0; i < dynamic_size / sizeof(Elf64_Dyn); i++){
-		Elf64_Dyn dyn;
-		if(read(fd, (char *)&dyn, sizeof(dyn)) < 0){
-			perror("read dyn");
-			close(fd);
-			return 1;
 		}
 	}
 	if(lseek64(fd, hdr.e_shoff + hdr.e_shstrndx * sizeof(Elf64_Shdr), SEEK_SET) < 0){
@@ -157,6 +134,17 @@ int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payloa
 	}
 	if(*hook_target == 0){
 		fprintf(stderr, "Could not find symbol name for hook target.\n");
+		close(fd);
+		return 1;
+	}
+	// Extract first instruction
+	if(lseek64(fd, *hook_target, SEEK_SET) < 0){
+		perror("lseek64 hook_target");
+		close(fd);
+		return 1;
+	}
+	if(read(fd, first_instruction, sizeof(*first_instruction)) < 0){
+		perror("read first instruction");
 		close(fd);
 		return 1;
 	}

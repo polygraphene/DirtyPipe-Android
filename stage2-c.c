@@ -37,6 +37,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+//#define STAGE2_DEBUG_LOG
+
 typedef unsigned long u64;
 
 void dp();
@@ -44,10 +46,12 @@ extern u64 mysyscall(u64, ...);
 extern void logerror(u64);
 
 struct global {
+#ifdef STAGE2_DEBUG_LOG
 	u64 libdl_addr;
 	void *(*dlopen)(const char *name, int flags);
 	void *(*dlsym)(const void *handle, const char *sym);
 	int (*vsnprintf)(char *buf, size_t size, const char* fmt, va_list ap);
+#endif
 };
 
 int overwrite(struct global *global, int p[2], int fd, loff_t offset, const char *data, int data_size);
@@ -237,6 +241,7 @@ int cmpsuf(const char *a, const char *b){
 	return mystrcmp(a + alen - blen, b) == 0;
 }
 
+#ifdef STAGE2_DEBUG_LOG
 void parse_line(const char *l, int len, struct global *global) {
 	u64 addr = 0;
 	for(int i = 0; l[i]; i++){
@@ -254,6 +259,7 @@ void parse_line(const char *l, int len, struct global *global) {
 	//logerror(*(u64*)l);
 	if(global->libdl_addr == 0 && cmpsuf(l, "/system/lib64/bootstrap/libdl.so")){
 		global->libdl_addr = addr;
+		// Device specific
 		global->dlopen = (typeof(global->dlopen))(global->libdl_addr + 0x1014);
 		global->dlsym = (typeof(global->dlsym))(global->libdl_addr + 0x1044);
 	}
@@ -288,6 +294,7 @@ void prepare_log(struct global *global) {
 	}
 	myclose(fd);
 }
+#endif
 
 void mymemcpy(char *dest, const char *src, int len){
 	for(int i = 0; i < len; i++){
@@ -337,6 +344,7 @@ void writelog(const char *buf) {
 }
 
 void lo(struct global *global, const char *p, ...) {
+#ifdef STAGE2_DEBUG_LOG
 	va_list l;
 	va_start(l, p);
 
@@ -346,6 +354,7 @@ void lo(struct global *global, const char *p, ...) {
 	writelog(buf);
 
 	va_end(l);
+#endif
 }
 
 #define LIBMOD_PAGES 4
@@ -360,14 +369,21 @@ void c_entry() {
 	char *modprobe_backup = (char *)mymmap(0, PAGE_SIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
 	char *libmod_backup = (char *)mymmap(0, LIBMOD_PAGES * PAGE_SIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
 
+#ifdef STAGE2_DEBUG_LOG
 	prepare_log(global);
 
 	void *libc = global->dlopen("libc.so", 0);
 	global->vsnprintf = (typeof(global->vsnprintf))
 		global->dlsym(libc, "vsnprintf");
+#endif
 
-	int fds = myopen(modprobe_path, O_RDONLY);
-	int fdmod = myopen(libmod_path, O_RDONLY);
+#ifdef STAGE2_DEBUG == 1
+	myopen("/dev/.s2a", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0755);
+	exit(2);
+#endif
+
+	int fds = myopen(modprobe_path, O_RDONLY | O_CLOEXEC);
+	int fdmod = myopen(libmod_path, O_RDONLY | O_CLOEXEC);
 
 	myread(fds, modprobe_backup, PAGE_SIZE);
 	myread(fdmod, libmod_backup, LIBMOD_PAGES * PAGE_SIZE);

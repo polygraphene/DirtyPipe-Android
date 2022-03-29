@@ -1,13 +1,13 @@
 CC=aarch64-linux-android31-clang
 CXX=aarch64-linux-android31-clang++
 STRIP=llvm-strip
-CFLAGS=-O2
+CFLAGS=-O2 $(CPPFLAGS)
 ADB=adb
 MYMOD_COPY=../../p6/kernel/out/android-gs-pixel-5.10/dist/mymod.ko
 D=/data/local/tmp
 LI=/system/lib/libldacBT_enc.so
 OBJS=dirtypipe-android.o stage1.o stage2-payload-include.S
-VERSION=1.0.2
+VERSION=1.0.3
 
 build: dirtypipe-android mymod.ko
 
@@ -15,13 +15,13 @@ dirtypipe-android: dirtypipe-android.o elf-parser.o Makefile stage1.o stage2-pay
 	$(CC) $(CFLAGS) -Wall -o $@ dirtypipe-android.o elf-parser.o stage1.o stage2-payload-include.S
 
 dirtypipe-android.o: dirtypipe-android.c Makefile stage2-symbol.h
-	$(CC) -Os -c -o $@ $<
+	$(CC) $(CFLAGS) -Os -c -o $@ $<
 
 elf-parser.o: elf-parser.c Makefile
-	$(CC) -Os -c -o $@ $<
+	$(CC) $(CFLAGS) -Os -c -o $@ $<
 
 stage1.o: stage1.S Makefile include.inc
-	$(CC) -c -o $@ $<
+	$(CC) $(CPPFLAGS) -c -o $@ $<
 
 stage2.o: stage2.S Makefile include.inc
 	$(CC) -nostdlib -c -o $@ $<
@@ -64,6 +64,12 @@ stage2-payload: stage2.text modprobe-payload mymod.ko Makefile
 
 stage2-payload-include.o: stage2-payload-include.S stage2-payload Makefile
 	$(CC) -c -o $@ $<
+
+clean:
+	-rm dirtypipe-android.o elf-parser.o stage1.o stage2-payload dirtypipe-android
+	-rm stage2.text stage2 stage2-c.o stage2.o
+	-rm stage2-symbol.h
+	-rm modprobe-payload
 
 ### INSTALL ###
 
