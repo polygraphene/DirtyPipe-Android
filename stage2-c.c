@@ -378,8 +378,9 @@ void c_entry() {
 #endif
 
 #if STAGE2_DEBUG == 1
-	myopen("/dev/.s2a", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0755);
-	exit(2);
+	myopen("/dev/.s2a", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC);
+	__asm__("mov x8, SYS_exit\n");
+	mysyscall(2);
 #endif
 
 	int fds = myopen(modprobe_path, O_RDONLY | O_CLOEXEC);

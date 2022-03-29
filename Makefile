@@ -5,7 +5,6 @@ CFLAGS=-O2 $(CPPFLAGS)
 ADB=adb
 MYMOD_COPY=../../p6/kernel/out/android-gs-pixel-5.10/dist/mymod.ko
 D=/data/local/tmp
-LI=/system/lib/libldacBT_enc.so
 OBJS=dirtypipe-android.o elf-parser.o stage1.o stage2-payload-include.S
 VERSION=1.0.3
 
@@ -24,13 +23,13 @@ stage1.o: stage1.S Makefile include.inc
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 
 stage2.o: stage2.S Makefile include.inc
-	$(CC) -nostdlib -c -o $@ $<
+	$(CC) $(CPPFLAGS) -nostdlib -c -o $@ $<
 
 stage2-c.o: stage2-c.c Makefile
-	$(CC) -Os -nostdlib -c -o $@ $<
+	$(CC) $(CPPFLAGS) -Os -nostdlib -c -o $@ $<
 
 stage2: stage2-c.o stage2.o stage2.lds Makefile
-	$(CC) -T stage2.lds -nostdlib -nostartfiles -static -o $@ stage2-c.o stage2.o
+	$(CC) $(CPPFLAGS) -T stage2.lds -nostdlib -nostartfiles -static -o $@ stage2-c.o stage2.o
 
 # Must be smaller than 4096 bytes
 stage2.text: stage2 Makefile
@@ -42,7 +41,7 @@ stage2-symbol.h: stage2 Makefile
 
 # Must be smaller than 4096 bytes
 modprobe-payload: modprobe-payload.c Makefile
-	$(CC) -Os -nostartfiles -o $@ $< -llog
+	$(CC) $(CPPFLAGS) -Os -nostartfiles -o $@ $< -llog
 	$(STRIP) $@
 
 mymod.ko: $(MYMOD_COPY)

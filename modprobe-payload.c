@@ -42,8 +42,22 @@ int _start() {
 		exit(1);
 	}
 	const char *lib_mod = cmdline + path_len + 1;
-
 	int fd = open(lib_mod, O_RDONLY);
+
+#if MODPROBE_DEBUG == 1
+	LOGV("Parsed lib_mod: %s\n", lib_mod);
+
+	if(lseek64(fd, 0x1000, SEEK_SET) < 0){
+		LOGV("Failed to lseek\n");
+	}
+	char buf2[1000];
+	if(read(fd, buf2, sizeof(buf2)) < 0){
+		LOGV("Failed to read\n");
+	}
+	LOGV("Content: %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx\n", buf2[0], buf2[1], buf2[2], buf2[3], buf2[4], buf2[5], buf2[6], buf2[7]);
+
+	exit(2);
+#endif
 
 	int ret = syscall(__NR_finit_module, fd, "", 0);
 	if(ret != 0){
