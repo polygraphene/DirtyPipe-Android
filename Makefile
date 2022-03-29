@@ -6,13 +6,13 @@ ADB=adb
 MYMOD_COPY=../../p6/kernel/out/android-gs-pixel-5.10/dist/mymod.ko
 D=/data/local/tmp
 LI=/system/lib/libldacBT_enc.so
-OBJS=dirtypipe-android.o stage1.o stage2-payload-include.S
+OBJS=dirtypipe-android.o elf-parser.o stage1.o stage2-payload-include.S
 VERSION=1.0.3
 
 build: dirtypipe-android mymod.ko
 
-dirtypipe-android: dirtypipe-android.o elf-parser.o Makefile stage1.o stage2-payload-include.S stage2-payload
-	$(CC) $(CFLAGS) -Wall -o $@ dirtypipe-android.o elf-parser.o stage1.o stage2-payload-include.S
+dirtypipe-android: $(OBJS) Makefile stage2-payload
+	$(CC) $(CFLAGS) -Wall -o $@ $(OBJS)
 
 dirtypipe-android.o: dirtypipe-android.c Makefile stage2-symbol.h
 	$(CC) $(CFLAGS) -Os -c -o $@ $<
