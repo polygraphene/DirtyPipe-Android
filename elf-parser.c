@@ -148,6 +148,17 @@ int find_hook_target(const char *libcxx, uint64_t *hook_target, uint64_t *payloa
 		close(fd);
 		return 1;
 	}
+	if(*first_instruction == 0xd503233fU){
+		// Hook next instruction if PACIASP is detected.
+		printf("d503233f PACIASP was found. Offset hook address by +4.\n");
+		*hook_target += 4UL;
+
+		if(read(fd, first_instruction, sizeof(*first_instruction)) < 0){
+			perror("read first instruction");
+			close(fd);
+			return 1;
+		}
+	}
 
 	close(fd);
 	return 0;
