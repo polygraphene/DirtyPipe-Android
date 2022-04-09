@@ -14,7 +14,8 @@ Especially, don't update/install magisk from magisk app. It will cause permanent
 2. Setup adb (android platform tools).
 3. Launch run.bat (For Windows) or run.sh (For Linux/Mac)
     - If you get `'adb' is not recognized ...` errors, check to add adb to PATH.
-4. You now get temporary root access
+4. magisk app should be automatically installed.
+4. Run `adb shell` then `/dev/.magisk/su` to get root shell.
 
 ![Screenshot](/screenshot1.png)
 
