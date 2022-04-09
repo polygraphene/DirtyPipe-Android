@@ -101,6 +101,11 @@ stage1_start:
     movl    x1, 0xa000           // args[1] = 0x1000
     svc     0
 
+#if 0
+myloop:
+    b myloop
+#endif
+
 #if STAGE1_DEBUG == 1
     // Debug
     // It will log x0+1 as fault address.

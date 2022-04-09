@@ -160,6 +160,7 @@
   .equ SYS_access,        1033
   .equ SYS_init_module,    105
   .equ SYS_lseek,           62
+  .equ SYS_readlinkat,      78
 
   .equ EAGAIN,              11
   .equ SEEK_DATA,            3
