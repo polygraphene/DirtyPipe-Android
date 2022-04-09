@@ -3,8 +3,7 @@
 # Now in root user + permissive domain (u:r:vendor_modprobe:s0)
 
 if [ -z "$1" ]; then
-    HOST=127.0.0.1
-    PORT=10847
+    log=/data/local/tmp/root-log1
 
     # BOOTCLASSPATH is required for magiskd
     export ANDROID_DATA=/data
@@ -32,11 +31,31 @@ if [ -z "$1" ]; then
     export PATH=/data/local/tmp/bin:/dev/.magisk:/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin
     export HOME=/data/local/tmp
 
+    # Sometimes unstable behaviors like EACCESS on accessing file happen.
+    # It may be caused by cache of old selinux policy.
+    # Wait for flush of the cache.
+    # TODO: Fix kernel module to flush cache manually.
+    for i in `seq 1 100`; do
+        rm $log
+        result1=$?
+        touch $log
+        result2=$?
+        if [ $result1 = 0 -a $result2 = 0 ]; then
+            echo Successfully access log. Try=$i > $log
+            break
+        fi
+        sleep 1
+    done
+
+    echo Start startup-root >> $log
+
     #/data/local/tmp/magisk/magiskpolicy --save /data/local/tmp/policy-dump
-    /data/local/tmp/magisk/busybox ln -s /data/local/tmp/magisk/magiskinit /data/local/tmp/magisk/magiskpolicy
-    /data/local/tmp/magisk/magiskpolicy --magisk --live
+    ln -s /data/local/tmp/magisk/magiskinit /data/local/tmp/magisk/magiskpolicy 2>> $log
+    /data/local/tmp/magisk/magiskpolicy --magisk --live 2>> $log
 
     echo u:r:magisk:s0 > /proc/self/attr/current
+
+    echo `date`: `id` >> $log
 
     # Send completion signal to restore files
     /data/local/tmp/magisk/busybox killall -s SIGUSR1 dirtypipe-android
@@ -45,6 +64,8 @@ if [ -z "$1" ]; then
     # /data/local/tmp/magisk/busybox telnetd -l /bin/sh -p 10848 &
 
     # Reverse shell: A little safer
+    #HOST=127.0.0.1
+    #PORT=10847
     #sleep 1
     #FIFO=/data/local/tmp/reverse-fifo
     #
@@ -61,6 +82,8 @@ if [ -z "$1" ]; then
 
 else
     #set -e
+
+    id
 
     /data/local/tmp/env-patcher || true
 
