@@ -8,7 +8,7 @@ D=/data/local/tmp
 OBJS=dirtypipe-android.o elf-parser.o stage1.o stage2-payload-include.S
 VERSION=1.0.3
 
-build: dirtypipe-android mymod.ko
+build: dirtypipe-android mymod.ko env-patcher
 
 dirtypipe-android: $(OBJS) Makefile stage2-payload
 	$(CC) $(CFLAGS) -Wall -o $@ $(OBJS)
@@ -64,6 +64,9 @@ stage2-payload: stage2.text modprobe-payload mymod.ko Makefile
 stage2-payload-include.o: stage2-payload-include.S stage2-payload Makefile
 	$(CC) -c -o $@ $<
 
+env-patcher: env-patcher.c Makefile
+	$(CC) -o $@ $<
+
 clean:
 	-rm dirtypipe-android.o elf-parser.o stage1.o stage2-payload dirtypipe-android
 	-rm stage2.text stage2 stage2-c.o stage2.o
@@ -72,9 +75,9 @@ clean:
 
 ### INSTALL ###
 
-install: dirtypipe-android startup-root magisk/busybox
-	$(ADB) push dirtypipe-android startup-root magisk/busybox $(D)
-	$(ADB) shell chmod 755 $(D)/dirtypipe-android $(D)/startup-root $(D)/busybox
+install: dirtypipe-android startup-root magisk/busybox env-patcher
+	$(ADB) push dirtypipe-android startup-root magisk/busybox env-patcher $(D)
+	$(ADB) shell chmod 755 $(D)/dirtypipe-android $(D)/startup-root $(D)/busybox $(D)/env-patcher
 
 run: install
 	$(ADB) shell $(D)/dirtypipe-android
