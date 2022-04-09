@@ -303,6 +303,7 @@ int main(int argc, char **argv)
 	}
 	memcpy(stage2_payload + stage2_root_cmd_addr, root_cmd, strlen(root_cmd) + 1);
 	printf("startup script: %s\n", root_cmd);
+	chmod(root_cmd, 0755);
 
 	int fd2 = open(stage2_lib, O_RDONLY); // yes, read-only! :-)
 	if (fd2 < 0) {

@@ -53,6 +53,7 @@ if [ -z "$1" ]; then
 
     #$BASE_DIR/magiskpolicy --save $BASE_DIR/policy-dump
     ln -s $BASE_DIR/magisk/magiskinit $BASE_DIR/magisk/magiskpolicy 2>> $log
+    chmod 755 $BASE_DIR/magisk/magiskinit $BASE_DIR/magisk/magisk $BASE_DIR/magisk/busybox
     $BASE_DIR/magisk/magiskpolicy --magisk --live 2>> $log
 
     echo u:r:magisk:s0 > /proc/self/attr/current
