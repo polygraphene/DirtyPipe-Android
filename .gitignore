@@ -3,5 +3,8 @@ modprobe-payload
 stage2-payload
 stage2
 stage2.text
+stage2-symbol.h
+env-patcher
+dist/
 
 *.o
