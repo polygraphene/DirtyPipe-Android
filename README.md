@@ -2,17 +2,26 @@
 Dirty Pipe (CVE-2022-0847) temporary root PoC for Android.
 
 # Targets
-Currently only run on Pixel 6 with security patch level 2022-02-05 or 2022-03-05.
+Currently only run on Pixel 6 with security patch level from 2022-02-05 to 2022-04-05.
 Don't use on other devices or other versions. It must crash (reboot).
+
+# WARNING
+There is possiblity to brick your phone by using this tool. Use it at your own risk.
+Especially, don't update/install magisk from magisk app. It will cause permanent brick.
 
 # How to use
 1. Download binary from release page.
 2. Setup adb (android platform tools).
 3. Launch run.bat (For Windows) or run.sh (For Linux/Mac)
     - If you get `'adb' is not recognized ...` errors, check to add adb to PATH.
-4. You now get temporary root shell by telnet \<Device IP Address\> 10847
+4. You now get temporary root access
 
 ![Screenshot](/screenshot1.png)
+
+# About Magisk
+1. Don't use install button on magisk app. It will brick your phone.
+2. Don't reboot even if magisk app request. It will lose temporary root.
+3. Only support root access. No magisk/zygisk modules support.
 
 # How to build
 1. Install Android NDK
@@ -44,7 +53,7 @@ See [here](TECHNICAL-DETAILS.md)
 # Future work
 - ~~Stop using insecure telnet~~
 - Make apk
-- Install Magisk
+- ~~Install Magisk~~
 - Add device support
 
 # Credits
