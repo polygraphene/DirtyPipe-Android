@@ -218,6 +218,9 @@ int main(int argc, char **argv)
 			}else if(strcmp(fingerprint, "google/oriole/oriole:12/SP2A.220305.013.A3/8229987:user/release-keys") == 0){
 				// Pixel 6 2022-03-05
 				stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
+			}else if(strcmp(fingerprint, "google/oriole/oriole:12/SP2A.220405.004/8233519:user/release-keys") == 0){
+				// Pixel 6 2022-04-05
+				stage2_param_libname = "/vendor/lib/libstagefright_soft_mp3dec.so";
 			}else{
 				fprintf(stderr, "Unsupported version: Product=%s Fingerprint=%s\n", product, fingerprint);
 				return EXIT_FAILURE;
