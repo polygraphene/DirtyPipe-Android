@@ -288,8 +288,21 @@ int main(int argc, char **argv)
 	int libname_len = strlen(stage2_param_libname);
 	if(libname_len >= 128 - 1){
 		fprintf(stderr, "Too long libname: %s\n", stage2_param_libname);
+		return EXIT_FAILURE;
 	}
 	memcpy(stage2_payload + stage2_libname_addr, stage2_param_libname, libname_len + 1);
+
+	// Embed the path of root startup script.
+	char root_cmd[256] = {};
+	readlink("/proc/self/exe", root_cmd, sizeof(root_cmd) - 20);
+	*strrchr(root_cmd, '/') = 0;
+	strcat(root_cmd, "/startup-root");
+	if(strlen(root_cmd) >= 128 - 1){
+		fprintf(stderr, "Too long root_cmd: %s\n", root_cmd);
+		return EXIT_FAILURE;
+	}
+	memcpy(stage2_payload + stage2_root_cmd_addr, root_cmd, strlen(root_cmd) + 1);
+	printf("startup script: %s\n", root_cmd);
 
 	int fd2 = open(stage2_lib, O_RDONLY); // yes, read-only! :-)
 	if (fd2 < 0) {

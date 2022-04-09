@@ -37,7 +37,9 @@ stage2.text: stage2 Makefile
 
 stage2-symbol.h: stage2 Makefile
 	echo -n "unsigned long stage2_libname_addr = 0x" > $@
-	(nm $< | grep -e ' T libname'$ | cut -f 1 -d " " | tr -d $$'\n'; echo "UL - 0x2000UL;") >> $@ || rm $@
+	(nm $< | grep -e ' T libname'$ | cut -f 1 -d " " | tr -d $$'\n'; echo "UL - 0x2000UL;") >> $@ || (rm $@; false)
+	echo -n "unsigned long stage2_root_cmd_addr = 0x" >> $@
+	(nm $< | grep -e ' T root_cmd'$ | cut -f 1 -d " " | tr -d $$'\n'; echo "UL - 0x2000UL;") >> $@ || (rm $@; false)
 
 # Must be smaller than 4096 bytes
 modprobe-payload: modprobe-payload.c Makefile
@@ -75,9 +77,9 @@ clean:
 
 ### INSTALL ###
 
-install: dirtypipe-android startup-root magisk/busybox env-patcher
-	$(ADB) push dirtypipe-android startup-root magisk/busybox env-patcher $(D)
-	$(ADB) shell chmod 755 $(D)/dirtypipe-android $(D)/startup-root $(D)/busybox $(D)/env-patcher
+install: dirtypipe-android startup-root env-patcher
+	$(ADB) push dirtypipe-android startup-root magisk/ env-patcher $(D)
+	$(ADB) shell chmod 755 $(D)/dirtypipe-android $(D)/startup-root $(D)/magisk/busybox $(D)/magisk/magiskinit $(D)/env-patcher
 
 run: install
 	$(ADB) shell $(D)/dirtypipe-android

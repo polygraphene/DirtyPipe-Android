@@ -30,7 +30,7 @@ int _start() {
 	char cmdline[1000];
 	int r = read(fd_c, cmdline, sizeof(cmdline) - 1);
 	if(r <= 0){
-		LOGV("Failed to get cmdline.");
+		LOGV("F: cmdline.");
 		exit(1);
 	}
 	close(fd_c);
@@ -38,15 +38,21 @@ int _start() {
 	cmdline[r] = 0;
 	int path_len = strlen(cmdline);
 	if(path_len >= r - 1){
-		LOGV("Failed to parse cmdline");
+		LOGV("F: Parse 1: %d r=%d %s", path_len, r, cmdline);
 		exit(1);
 	}
 	const char *lib_mod = cmdline + path_len + 1;
 	int fd = open(lib_mod, O_RDONLY);
 
-#if MODPROBE_DEBUG == 1
-	LOGV("Parsed lib_mod: %s\n", lib_mod);
+	const char *root_cmd = lib_mod + strlen(lib_mod) + 1;
+	if(root_cmd - cmdline >= r - 1){
+		LOGV("Parse: %d %d", root_cmd - cmdline, r - 1);
+		exit(1);
+	}
 
+	LOGV("Parsed '%s' '%s' fd=%d\n", lib_mod, root_cmd, fd);
+
+#if MODPROBE_DEBUG == 1
 	if(lseek64(fd, 0x1000, SEEK_SET) < 0){
 		LOGV("Failed to lseek\n");
 	}
@@ -60,20 +66,16 @@ int _start() {
 #endif
 
 	int ret = syscall(__NR_finit_module, fd, "", 0);
-	if(ret != 0){
+	if(ret == 0 || errno == ENOMSG){
 		// finit_module failed with:
 		// EPERM 1: Not root or not has CAP_SYS_MODULE capability.
 		// ENOEXEC 8: bad module file
 		// EACCES 13: denied by selinux policy. current domain has no load_module permission.
 		// EFAULT 14: module was loaded but something wrong on modifying selinux policy.
 		// ENOMSG 42: ok. mymod returns ENOMSG even if succeed to load.
-		if(errno == ENOMSG){
-			LOGV("Successfully set permissive: %s %d %d\n", lib_mod, ret, errno);
-		}else{
-			LOGV("Error on finit_module: %s %d %d\n", lib_mod, ret, errno);
-		}
+		LOGV("Succeed: %s %d %d\n", lib_mod, ret, errno);
 	}else{
-		LOGV("Succeed on finit_module: %s %d\n", lib_mod, ret);
+		LOGV("Failed: %s %d %d\n", lib_mod, ret, errno);
 	}
 	close(fd);
 
@@ -88,8 +90,8 @@ int _start() {
 	dup2(fdnull, 2);
 
 	if(fork() == 0){
-		execve("/data/local/tmp/startup-root", 0, 0);
-		LOGV("execve: %d\n", errno);
+		execve(root_cmd, 0, 0);
+		LOGV("execve: %d %s\n", errno, root_cmd);
 		exit(2);
 		return 0;
 	}
