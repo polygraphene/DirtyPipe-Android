@@ -382,6 +382,8 @@ void c_entry(const char *arg_libname, const char *arg_root_cmd) {
 	void *libc = global->dlopen("libc.so", 0);
 	global->vsnprintf = (typeof(global->vsnprintf))
 		global->dlsym(libc, "vsnprintf");
+
+	lo(global, "Param: %s %s\n", arg_libname, arg_root_cmd);
 #endif
 
 #if STAGE2_DEBUG == 1

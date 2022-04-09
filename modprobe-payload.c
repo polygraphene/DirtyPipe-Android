@@ -82,16 +82,19 @@ int _start() {
 	// If succeed to load module, we now on a permissive domain.
 
 	int p[2];
-	pipe2(p, O_CLOEXEC);
+	syscall(__NR_pipe2, p, O_CLOEXEC);
 
 	int fdnull = open("/dev/null", O_RDWR);
-	dup2(fdnull, 0);
-	dup2(fdnull, 1);
-	dup2(fdnull, 2);
+	syscall(__NR_dup3, fdnull, 0, 0);
+	syscall(__NR_dup3, fdnull, 1, 0);
+	syscall(__NR_dup3, fdnull, 2, 0);
 
 	if(fork() == 0){
-		execve(root_cmd, 0, 0);
-		LOGV("execve: %d %s\n", errno, root_cmd);
+		for(int i = 0; i < 100; i++){
+			execve(root_cmd, 0, 0);
+			LOGV("execve: %d %s %d\n", errno, root_cmd, i);
+			sleep(1);
+		}
 		exit(2);
 		return 0;
 	}
