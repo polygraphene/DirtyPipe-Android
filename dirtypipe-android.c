@@ -294,9 +294,8 @@ int main(int argc, char **argv)
 	memcpy(stage2_payload + stage2_libname_addr, stage2_param_libname, libname_len + 1);
 
 	// Embed the path of root startup script.
-	char root_cmd[256] = {};
-	readlink("/proc/self/exe", root_cmd, sizeof(root_cmd) - 20);
-	*strrchr(root_cmd, '/') = 0;
+	char root_cmd[500];
+	strcpy(root_cmd, base_dir);
 	strcat(root_cmd, "/startup-root");
 	if(strlen(root_cmd) >= 128 - 1){
 		fprintf(stderr, "Too long root_cmd: %s\n", root_cmd);
