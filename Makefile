@@ -6,7 +6,7 @@ ADB=adb
 MYMOD_COPY=../../p6/kernel/out/android-gs-pixel-5.10/dist/mymod.ko
 D=/data/local/tmp
 OBJS=dirtypipe-android.o elf-parser.o stage1.o stage2-payload-include.S
-VERSION=1.0.3
+VERSION=1.0.4
 
 build: dirtypipe-android mymod.ko env-patcher
 
