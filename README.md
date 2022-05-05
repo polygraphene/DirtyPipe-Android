@@ -5,6 +5,8 @@ Dirty Pipe (CVE-2022-0847) temporary root PoC for Android.
 Currently only run on Pixel 6 with security patch level from 2022-02-05 to 2022-04-05.
 Don't use on other devices or other versions. It must crash (reboot).
 
+Dirty Pipe is finally patched on 2022 May security update on Pixel 6.
+
 # WARNING
 There is possiblity to brick your phone by using this tool. Use it at your own risk.
 Especially, don't update/install magisk from magisk app. It will cause permanent brick.
