@@ -1,41 +1,29 @@
 diff --git a/build.config.slider b/build.config.slider
-index 595b8d75d11a..fb32e8fabe86 100644
+index 595b8d75d11a..887437feef49 100644
 --- a/build.config.slider
 +++ b/build.config.slider
-@@ -2,13 +2,16 @@
- 
- MAKE_GOALS="$MAKE_GOALS
- modules
--google/gs101-a0.dtb
--google/gs101-b0.dtb
--google/dtbo.img
--google/gs101-dpm-eng.dtbo
--google/gs101-dpm-user.dtbo
--google/gs101-dpm-userdebug.dtbo
+@@ -9,6 +9,9 @@ google/gs101-dpm-eng.dtbo
+ google/gs101-dpm-user.dtbo
+ google/gs101-dpm-userdebug.dtbo
  "
-+MAKE_GOALS="modules"
-+
-+#google/gs101-a0.dtb
-+#google/gs101-b0.dtb
-+#google/dtbo.img
-+#google/gs101-dpm-eng.dtbo
-+#google/gs101-dpm-user.dtbo
-+#google/gs101-dpm-userdebug.dtbo
-+#"
++MAKE_GOALS="
++modules
++"
  
  FILES="
  arch/arm64/boot/dts/google/gs101-a0.dtb
-@@ -18,12 +21,13 @@ arch/arm64/boot/dts/google/gs101-dpm-eng.dtbo
+@@ -18,12 +21,14 @@ arch/arm64/boot/dts/google/gs101-dpm-eng.dtbo
  arch/arm64/boot/dts/google/gs101-dpm-user.dtbo
  arch/arm64/boot/dts/google/gs101-dpm-userdebug.dtbo
  "
-+FILES=""
- 
+-
 -if [ -z "$MIXED_BUILD" ]; then
 -FILES="$FILES
 -$DEVICE_KERNEL_FILES
--"
++FILES="
+ "
 -fi
++
 +#if [ -z "$MIXED_BUILD" ]; then
 +#FILES="$FILES
 +#$DEVICE_KERNEL_FILES
@@ -44,66 +32,10 @@ index 595b8d75d11a..fb32e8fabe86 100644
  
  MODULES_LIST=${KERNEL_DIR}/vendor_boot_modules.slider
  
-@@ -58,3 +62,16 @@ private/google-modules/power/reset
+@@ -58,3 +63,6 @@ private/google-modules/power/reset
  private/google-modules/bluetooth/broadcom
  private/google-modules/nfc
  "
 +EXT_MODULES="
 +private/google-modules/mymod
 +"
-+
-+POST_DEFCONFIG_CMDS="update_debug_config"
-+function update_debug_config() {
-+    ${KERNEL_DIR}/scripts/config --file ${OUT_DIR}/.config \
-+         --set-str CONFIG_LOCALVERSION "-g0d8fb02914e6-ab8042715" \
-+         -e CFI \
-+         -e CFI_CLANG
-+    (cd ${OUT_DIR} && \
-+     make O=${OUT_DIR} $archsubarch CC=${CC} CROSS_COMPILE=${CROSS_COMPILE} olddefconfig)
-+}
-diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-index 3f8a8ee14b10..31e71a2a9640 100755
---- a/scripts/setlocalversion
-+++ b/scripts/setlocalversion
-@@ -53,6 +53,8 @@ scm_version()
- {
- 	local short
- 	short=false
-+	echo "g0d8fb02914e6"
-+	return
- 
- 	cd "$srctree"
- 	if test -e .scmversion; then
-@@ -77,7 +79,7 @@ scm_version()
- 			# If only the short version is requested, don't bother
- 			# running further git commands
- 			if $short; then
--				echo "+"
-+				echo ""
- 				return
- 			fi
- 			# If we are past a tagged commit (like
-@@ -198,11 +200,13 @@ fi
- 
- # CONFIG_LOCALVERSION and LOCALVERSION (if set)
- res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}"
-+res="-g0d8fb02914e6-ab8042715"
- 
- # scm version string if not at a tagged commit
- if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
- 	# full scm version string
--	res="$res$(scm_version)"
-+	#res="$res$(scm_version)"
-+	res="$res"
- else
- 	# append a plus sign if the repository is not in a clean
- 	# annotated or signed tagged state (as git describe only
-@@ -210,7 +214,7 @@ else
- 	# LOCALVERSION= is not specified
- 	if test "${LOCALVERSION+set}" != "set"; then
- 		scm=$(scm_version --short)
--		res="$res${scm:++}"
-+		#res="$res${scm:++}"
- 	fi
- fi
- 
