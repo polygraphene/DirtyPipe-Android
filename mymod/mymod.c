@@ -83,52 +83,21 @@ struct sidtab_entry {
 	struct hlist_node list;
 };
 
-
-struct selinux_state *selinux_state_ = NULL;
-
-int (*security_context_to_sid_)(struct selinux_state *state,
-			    const char *scontext, u32 scontext_len,
-			    u32 *out_sid, gfp_t gfp) = NULL;
-
-int (*ebitmap_set_bit_)(struct ebitmap *e, unsigned long bit, int value) = NULL;
-struct sidtab_entry *(*sidtab_search_entry_)(struct sidtab *s, u32 sid) = NULL;
-struct lsm_blob_sizes *selinux_blob_sizes_ = NULL;
-
-// https://github.com/c-sh0/lkm_ftrace_example/blob/main/inet_bind_mod.c
-
-static int kallsyms_walk_callback(void *data, const char *name, struct module *mod, unsigned long addr) {
-	if(mod) {
-		return 0;
-	}
-
-	if(strcmp(name, "selinux_state") == 0) {
-		selinux_state_ = (struct selinux_state *)addr;
-	}else if(strcmp(name, "security_context_to_sid") == 0) {
-		security_context_to_sid_ = (typeof(security_context_to_sid_))addr;
-	}else if(strcmp(name, "selinux_blob_sizes") == 0) {
-		selinux_blob_sizes_ = (struct lsm_blob_sizes *)addr;
-	}else if(strcmp(name, "ebitmap_set_bit") == 0) {
-		ebitmap_set_bit_ = (typeof(ebitmap_set_bit_))addr;
-	}else if(strcmp(name, "sidtab_search_entry") == 0) {
-		sidtab_search_entry_ = (typeof(sidtab_search_entry_))addr;
-	}
-
-	return 0;
-}
-
 static int __init mymod_init(void) {
+	
 	int rc = 0;
+	struct selinux_state *selinux_state_ = NULL;
 
 	pr_info("mymod_init: called!\n");
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
+	typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
+	
+	kallsyms_lookup_name_t kallsyms_lookup_name = NULL;
+	
 	static struct kprobe kp = {
-		.symbol_name = "kallsyms_on_each_symbol"
+		.symbol_name = "kallsyms_lookup_name"
 	};
-
-	typedef int (*kallsyms_on_each_symbol_t)(int (*fn)(void *, const char *, struct module *, unsigned long), void *data);
-	kallsyms_on_each_symbol_t kallsyms_on_each_symbol;
-
 	rc = register_kprobe(&kp);
 	if(rc < 0) {
 		pr_info("mymod_init: register_kprobe failed: %d\n", rc);
@@ -136,25 +105,22 @@ static int __init mymod_init(void) {
 	}
 	pr_info("mymod_init: register_kprobe: %d\n", rc);
 
-	kallsyms_on_each_symbol = (kallsyms_on_each_symbol_t) kp.addr;
+	kallsyms_lookup_name = (kallsyms_lookup_name_t) kp.addr;
 	unregister_kprobe(&kp);
 #endif
-	pr_info("mymod_init: kallsyms_on_each_symbol : 0x%lx\n", (unsigned long)kallsyms_on_each_symbol);
-
-	/* walk /proc/kallsyms */
-	rc = kallsyms_on_each_symbol(kallsyms_walk_callback, NULL);
-	pr_info("mymod_init: kallsyms_on_each_symbol returned: %d\n", rc);
-	if(rc) {
-	  	return rc;
-	}
-
-	/* if not found, exit with `Bad address` */
+	selinux_state_ = (typeof(selinux_state_))kallsyms_lookup_name("selinux_state");
+	// if not found, exit with `Bad address`
 	if(selinux_state_ == NULL) {
 		pr_info("mymod_init: real_selinux_state == NULL\n");
 		return -EFAULT;
 	}
 #define USE_PERMISSIVE_DOMAIN
 #ifdef USE_PERMISSIVE_DOMAIN
+	int (*ebitmap_set_bit_)(struct ebitmap *e, unsigned long bit, int value) = NULL;
+	struct sidtab_entry *(*sidtab_search_entry_)(struct sidtab *s, u32 sid) = NULL;
+	struct lsm_blob_sizes *selinux_blob_sizes_ = NULL;
+	
+	selinux_blob_sizes_ = (typeof(selinux_blob_sizes_))kallsyms_lookup_name("selinux_blob_sizes");
 	if(selinux_blob_sizes_ == NULL){
 		pr_info("mymod_init: selinux_blob_sizes = NULL");
 	}else{
@@ -169,12 +135,14 @@ static int __init mymod_init(void) {
 			pr_info("mymod_init: cred->security == NULL");
 			return -EFAULT;
 		}
+		ebitmap_set_bit_ = (typeof(ebitmap_set_bit_))kallsyms_lookup_name("ebitmap_set_bit");
 		if(ebitmap_set_bit_ == NULL){
 			pr_info("mymod_init: ebitmap_set_bit_ == NULL");
 			return -EFAULT;
 		}
+		sidtab_search_entry_ = (typeof(sidtab_search_entry_))kallsyms_lookup_name("sidtab_search_entry");
 		if(sidtab_search_entry_ == NULL){
-			pr_info("mymod_init: ebitmap_set_bit_ == NULL");
+			pr_info("mymod_init: sidtab_search_entry_ == NULL");
 			return -EFAULT;
 		}
 		struct task_security_struct *tsec = cred->security + selinux_blob_sizes_->lbs_cred;
@@ -198,14 +166,18 @@ static int __init mymod_init(void) {
 	// It will set whole system permissive. A bit unsecure, I think.
 	pr_info("mymod_init: Setting selinux_state.enforcing=false. %lx %lx\n", (unsigned long)selinux_state_,
 			(unsigned long)&selinux_state_->enforcing);
-	bool old = READ_ONCE(selinux_state_->enforcing);
-	pr_info("mymod_init: Current value of selinux_state.enforcing=%d\n", old);
+	bool enforcing_status = READ_ONCE(selinux_state_->enforcing);
+	pr_info("mymod_init: Current value of selinux_state.enforcing=%d\n", enforcing_status);
 	WRITE_ONCE(selinux_state_->enforcing, false);
-	bool b = READ_ONCE(selinux_state_->enforcing);
-	pr_info("mymod_init: New value of selinux_state.enforcing=%d\n", old);
+	enforcing_status = READ_ONCE(selinux_state_->enforcing);
+	pr_info("mymod_init: New value of selinux_state.enforcing=%d\n", enforcing_status);
 #endif
 
+	//int (*security_context_to_sid_)(struct selinux_state *state,
+	//		    const char *scontext, u32 scontext_len,
+	//		    u32 *out_sid, gfp_t gfp) = NULL;
 	// It won't work because update_engine (permissive domain) doesn't exist before magisk policy patch.
+	//security_context_to_sid_ = (typeof(security_context_to_sid_))kallsyms_lookup_name("security_context_to_sid");
 	//rc = security_context_to_sid_(selinux_state_, "update_engine", strlen("update_engine"),
 	//		&sid, GFP_KERNEL);
 	//if(rc != 0){
@@ -236,3 +208,4 @@ module_exit(mymod_exit);
 
 MODULE_LICENSE("GPL v2");
 __asm__(".space 32, 0\n");
+
