@@ -7,6 +7,10 @@ Don't use on other devices or other versions. It must crash (reboot).
 
 Dirty Pipe is finally patched on 2022 May security update on Pixel 6.
 
+There is a port to Realme GT2 Pro by @rapperskull (https://github.com/polygraphene/DirtyPipe-Android/issues/12). [link](https://forum.xda-developers.com/t/eu-model-unlock-bootloader-of-european-model.4454787/)
+
+Certain version of Galaxy S22 is also vulnerable. But not ported yet. (https://github.com/polygraphene/DirtyPipe-Android/issues/3)
+
 # WARNING
 There is possiblity to brick your phone by using this tool. Use it at your own risk.
 Especially, don't update/install magisk from magisk app. It will cause permanent brick.
